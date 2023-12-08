@@ -1,24 +1,24 @@
 const {Router } = require('express');
 const Inventario = require('../models/Inventario');
-const bycript = require('bcryptjs');
+//const bycript = require('bcryptjs');
 const {validationResult, check} = require('express-validator');
+const {validarJWT} = require('../middleweare/validar-jwt');
+const {validarRolAdmin} = require('../middleweare/validar-rol-admin');
 
 const router = Router();
 
-router.post('/', [
+router.post('/', [validarJWT, validarRolAdmin], [
     check('serial', 'invalid.serial').not().isEmpty(),
     check('modelo', 'invalid.modelo').not().isEmpty(),
     check('descripcion', 'invalid.descripcion').not().isEmpty(),
     check('color', 'invalid.color').not().isEmpty(),
     check('foto', 'invalid.foto').not().isEmpty(),
     check('fechaCompra', 'invalid.fechaCompra').not().isEmpty(),
-    check('precio', 'invalid.precio').not().isEmpty().isFloat({min:0}),
+    check('precio', 'invalid.precio').not().not().isEmpty().isFloat({min:0}),
     check('usuario', 'invalid.usuario').not().isEmpty(),
     check('marca', 'invalid.marca').not().isEmpty(),
     check('estadoEquipo', 'invalid.estadoEquipo').not().isEmpty(),
-    check('tipoEquipo', 'invalid.tipoEquipo').not().isEmpty(),
-
-
+    check('tipoEquipo', 'invalid.tipoEquipo').not().isEmpty()
 ], async function(req, res) {
 
     try {
@@ -42,7 +42,7 @@ router.post('/', [
         inventario.precio = req.body.precio;
         inventario.usuario = req.body.usuario._id;
         inventario.marca = req.body.marca._id;
-        inventario.estadoEquipo = req.body.estadoEquipo-_id;
+        inventario.estadoEquipo = req.body.estadoEquipo._id;
         inventario.tipoEquipo = req.body.tipoEquipo._id;
         inventario.fechaCreacion = new Date();
         inventario.fechaActualizacion = new Date();
@@ -50,15 +50,13 @@ router.post('/', [
         inventario = await inventario.save();
         res.send(inventario);
 
-
-
     } catch(error) {
         console.log(error);
         res.status(500).send('Ocurrió un error');
     }
 });
 
-router.get('/', async function(req, res) {
+router.get('/', validarJWT, async function(req, res) {
     try {
         const inventarios = await Inventario.find().populate([
             {
@@ -71,7 +69,7 @@ router.get('/', async function(req, res) {
                 path: 'estadoEquipo', select: 'nombre estado'
             },
             {
-                path: 'tipoEquipo', select: 'nombre estadoo'
+                path: 'tipoEquipo', select: 'nombre estado'
             }
         ]);
         res.send(inventarios);

@@ -8,8 +8,7 @@ const router = Router();
 
 router.post('/', [
     check('email', 'invalid.email').isEmail(),
-    check('password', 'invalid.password').not().isEmpty(),
-
+    check('password', 'invalid.password').not().isEmpty()
 ], async function(req, res) {
 
     try {

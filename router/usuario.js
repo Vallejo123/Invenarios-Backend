@@ -2,15 +2,17 @@ const {Router } = require('express');
 const Usuario = require('../models/Usuario');
 const bycript = require('bcryptjs');
 const {validationResult, check} = require('express-validator');
+const {validarJWT} = require('../middleweare/validar-jwt');
+const {validarRolAdmin} = require('../middleweare/validar-rol-admin');
 
 const router = Router();
 
-router.post('/', [
+router.post('/', [validarJWT, validarRolAdmin], [
     check('nombre', 'invalid.nombre').not().isEmpty(),
     check('email', 'invalid.email').isEmail(),
     check('password', 'invalid.password').not().isEmpty(),
     check('rol', 'invalid.rol').isIn(['Administrador', 'Docente']),
-    check('estado', 'invalid.estado').isIn(['ACtivo', 'Inactivo']),
+    check('estado', 'invalid.estado').isIn(['Activo', 'Inactivo'])
 ], async function(req, res) {
 
     try {
@@ -40,15 +42,13 @@ router.post('/', [
 
         res.send(usuario);
 
-
-
     } catch(error) {
         console.log(error);
         res.status(500).send('Ocurrió un error');
     }
 });
 
-router.get('/', async function(req, res) {
+router.get('/', [validarJWT, validarRolAdmin], async function(req, res) {
     try {
         const usuarios = await Usuario.find();
         res.send(usuarios);
@@ -57,7 +57,6 @@ router.get('/', async function(req, res) {
         res.status(500).send('Ocurrió un error');
     }
 });
-
 //router.put('/:usuarioId')
 //router.delete('/usuarioId')
 

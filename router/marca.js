@@ -1,51 +1,73 @@
-const { Router } = require("express");
-const Marca = require("../models/Marca");
-const { validationResult, check } = require("express-validator");
+const {Router } = require('express');
+const Marca = require('../models/Marca');
+const {validationResult, check} = require('express-validator');
+const {validarJWT} = require('../middleweare/validar-jwt');
+const {validarRolAdmin} = require('../middleweare/validar-rol-admin');
 
 const router = Router();
 
-router.post(
-  "/",
-  [
-    check("nombre", "El nombre no puede estar vacío").not().isEmpty(),
-    check("estado", 'El estado debe ser "Activo" o "Inactivo"').isIn([
-      "Activo",
-      "Inactivo",
-    ]),
-  ],
-  async function (req, res) {
+router.post('/', [validarJWT, validarRolAdmin], [
+    check('nombre', 'invalid.nombre').not().isEmpty(),
+    check('estado', 'invalid.estado').isIn(['Activo', 'Inactivo']),
+], async function(req, res) {
+
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errores: errors.array() });
-      }
+        const errors =  validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({mensaje: errors.array()});
+        }
 
-      let marca = new Marca();
-      marca.nombre = req.body.nombre;
-      marca.estado = req.body.estado;
-      marca.fechaCreacion = new Date();
-      marca.fechaActualizacion = new Date();
+        let marca = new Marca();
+        marca.nombre = req.body.nombre;
+        marca.estado = req.body.estado;
+        marca.fechaCreacion = new Date();
+        marca.fechaActualizacion = new Date();
 
-      marca = await marca.save();
+        marca = await marca.save();
 
-      res.status(201).json({ mensaje: "Marca creada correctamente", marca });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ mensaje: "Ocurrió un error al procesar la solicitud" });
+        res.send(marca);
+
+    } catch(error) {
+        console.log(error);
+        res.status(500).send('Ocurrió un error');
     }
-  }
-);
+});
 
-router.get("/", async function (req, res) {
-  try {
-    const marcas = await Marca.find();
-    res.send(marcas);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send("Ocurrió un error 2");
-  }
+router.get('/', [validarJWT], async function(req, res) {
+    try {
+        const marcas = await Marca.find();
+        res.send(marcas);
+    }catch(error) {
+        console.log(error);
+        res.status(500).send('Ocurrió un error 2');
+    }
+});
+
+router.put('/:marcaId', [validarJWT, validarRolAdmin], [
+    check('nombre', 'invalid.nombre').not().isEmpty(),
+    check('estado', 'invalid.estado').isIn(['Activo', 'Inactivo']),
+    ], async function(req, res) {
+
+    try {
+
+        const errors =  validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({mensaje: errors.array()});
+        }
+
+        let marca = await Marca.findById(req.params.marcaId);
+        if (!marca) {
+            return res.status(400).send('Marca not found');
+        }
+        marca.nombre = req.body.nombre;
+        marca.estado = req.body.estado;
+        marca.fechaActualizacion = new Date();
+        marca = await marca.save();
+        res.send(marca);
+
+    }catch(error){
+        console.log(error);
+    }
 });
 
 module.exports = router;
